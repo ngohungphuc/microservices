@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using FlixOne.BookStore.ProductService.Models;
 using FlixOne.BookStore.ProductService.Persistence;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,6 +17,23 @@ namespace FlixOne.BookStore.ProductService.Controllers
         public ProductController(IProductRepository ProductRepository)
         {
             _ProductRepository = ProductRepository;
+        }
+
+        public IActionResult Get()
+        {
+            var Productvm = _ProductRepository.GetAll().Select(Product
+            => new ProductViewModel
+            {
+                CategoryId = Product.CategoryId,
+                CategoryDescription = Product.Category.Description,
+                CategoryName = Product.Category.Name,
+                ProductDescription = Product.Description,
+                ProductId = Product.Id,
+                ProductImage = Product.Image,
+                ProductName = Product.Name,
+                ProductPrice = Product.Price
+            }).ToList();
+            return new OkObjectResult(Productvm);
         }
     }
 }
