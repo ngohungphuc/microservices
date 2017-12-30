@@ -12,3 +12,11 @@ Ref link
 + https://medium.com/@FurryMogwai/building-a-basket-micro-service-using-asp-net-core-and-akka-net-ea2a32ca59d5
 
 + http://www.bloggedbychris.com/2016/07/12/stateful-microservice-net-core-docker-postresql/
+
+
+run 
+```
+Add-Migration ProductDb
+
+Update-Database
+```
