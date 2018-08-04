@@ -6,7 +6,7 @@ using ShoppingCart.EventFeed;
 
 namespace ShoppingCart
 {
-    public class ShoppingCartModule: NancyModule
+    public class ShoppingCartModule : NancyModule
     {
         public ShoppingCartModule(
             IShoppingCartStore shoppingCartStore,
@@ -31,6 +31,16 @@ namespace ShoppingCart
                     await productCatalogue.GetShoppingCartItems(productcatalogIds).ConfigureAwait(false);
                 shoppingCart.AddItems(shoppingCartItems, eventStore);
 
+                shoppingCartStore.Save(shoppingCart);
+                return shoppingCart;
+            });
+
+            Delete("/{userid:int}/items", parameters =>
+            {
+                var productCatalogIds = this.Bind<int[]>();
+                var userId = (int)parameters.userid;
+                var shoppingCart = shoppingCartStore.Get(userId);
+                shoppingCart.RemoveItems(productCatalogIds, eventStore);
                 shoppingCartStore.Save(shoppingCart);
                 return shoppingCart;
             });
