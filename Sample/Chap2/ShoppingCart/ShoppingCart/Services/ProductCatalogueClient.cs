@@ -4,14 +4,24 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Polly;
 using ShoppingCart.ShoppingCart;
 
 namespace ShoppingCart.Services
 {
     public class ProductCatalogueClient
     {
+        private static Policy exponentialRetryPolicy = Policy.Handle<Exception>()
+            .WaitAndRetryAsync(3, attempt => TimeSpan.FromMilliseconds(100 * Math.Pow(2, attempt)));
+
         private static string productCatalogBaseUrl = @"http://private-05cc8-chapter2productcatalogmicroservice.apiary-mock.com";
         private static string getProductPathTemplate = "/products?productIds=[{0}]";
+
+
+        public Task<IEnumerable<ShoppingCartItem>>
+            GetShoppingCartItems(int[] productCatalogueIds) =>
+            exponentialRetryPolicy
+                .ExecuteAsync(async () => await GetItemsFromCatalogueService(productCatalogueIds).ConfigureAwait(false));
 
         private static async Task<HttpResponseMessage> RequestProductFromProductCatalogue(int[] productCatalogueIds)
         {
@@ -35,9 +45,11 @@ namespace ShoppingCart.Services
                 new ShoppingCartItem(int.Parse(p.ProductId), p.ProductName, p.ProductDescription, p.Price));
         }
 
-        private async Task<IEnumerable<ShoppingCartItem>> GetItemsFromCatalogService(int[] productCatalogueIds)
+        private async Task<IEnumerable<ShoppingCartItem>>
+            GetItemsFromCatalogueService(int[] productCatalogueIds)
         {
-            var response = await RequestProductFromProductCatalogue(productCatalogueIds).ConfigureAwait(false);
+            var response = await
+                RequestProductFromProductCatalogue(productCatalogueIds).ConfigureAwait(false);
             return await ConvertToShoppingCartItems(response).ConfigureAwait(false);
         }
 
