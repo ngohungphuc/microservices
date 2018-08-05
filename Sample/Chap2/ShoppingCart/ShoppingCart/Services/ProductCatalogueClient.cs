@@ -35,6 +35,12 @@ namespace ShoppingCart.Services
                 new ShoppingCartItem(int.Parse(p.ProductId), p.ProductName, p.ProductDescription, p.Price));
         }
 
+        private async Task<IEnumerable<ShoppingCartItem>> GetItemsFromCatalogService(int[] productCatalogueIds)
+        {
+            var response = await RequestProductFromProductCatalogue(productCatalogueIds).ConfigureAwait(false);
+            return await ConvertToShoppingCartItems(response).ConfigureAwait(false);
+        }
+
         private class ProductCatalogueProduct
         {
             public string ProductId { get; set; }
@@ -43,5 +49,4 @@ namespace ShoppingCart.Services
             public Money Price { get; set; }
         }
     }
-
 }
