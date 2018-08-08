@@ -17,6 +17,13 @@ namespace LoyaltyProgram
                 this.AddRegisteredUser(newUser);
                 return this.CreatedResponse(newUser);
             });
+
+            Put("/{userId:int}", parameters =>
+            {
+                int userId = parameters.userId;
+                var updatedUser = this.Bind<LoyaltyProgramUser>();
+                return updatedUser;
+            });
         }
         private dynamic CreatedResponse(LoyaltyProgramUser newUser)
         {
