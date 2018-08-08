@@ -9,8 +9,20 @@ namespace LoyaltyProgram
 {
     public sealed class UsersModule : NancyModule
     {
+        private static readonly IDictionary<int, LoyaltyProgramUser> registeredUsers =
+            new Dictionary<int, LoyaltyProgramUser>();
+
         public UsersModule() : base("/users")
         {
+            Get("/{userId:int}", parameters =>
+            {
+                int userId = parameters.userId;
+                if (registeredUsers.ContainsKey(userId))
+                    return registeredUsers[userId];
+                else
+                    return HttpStatusCode.NotFound;
+            });
+
             Post("/", _ =>
             {
                 var newUser = this.Bind<LoyaltyProgramUser>();

@@ -11,6 +11,19 @@ namespace ApiGatewayMock
     {
         private string hostName;
 
+        public async Task<LoyaltyProgramUser> QueryUser(int userId)
+        {
+            var userResource = $"/users/{userId}";
+            using (var httpClient = new HttpClient())
+            {
+                httpClient.BaseAddress = new Uri($"http://{this.hostName}");
+                var response = await httpClient.GetAsync(userResource);
+
+                ThrowOnTransientFailure(response);
+                return JsonConvert.DeserializeObject<LoyaltyProgramUser>(await response.Content.ReadAsStringAsync());
+            }
+        }
+
         public async Task<LoyaltyProgramUser> RegisterUser(LoyaltyProgramUser newUser)
         {
             using (var httpClient = new HttpClient())
