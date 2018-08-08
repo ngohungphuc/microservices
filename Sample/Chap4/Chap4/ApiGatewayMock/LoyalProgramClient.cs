@@ -23,6 +23,20 @@ namespace ApiGatewayMock
                 return JsonConvert.DeserializeObject<LoyaltyProgramUser>(await response.Content.ReadAsStringAsync());
             }
         }
+
+        public async Task<LoyaltyProgramUser> UpdateUser(LoyaltyProgramUser user)
+        {
+            using (var httpClient = new HttpClient())
+            {
+                httpClient.BaseAddress = new Uri($"http://{this.hostName}");
+                var response = await httpClient.PutAsync($"/users/{user.Id}",
+                    new StringContent(JsonConvert.SerializeObject(user), Encoding.UTF8, "application/json"));
+
+                ThrowOnTransientFailure(response);
+                return JsonConvert.DeserializeObject<LoyaltyProgramUser>(await response.Content.ReadAsStringAsync());
+            }
+        }
+
         private static void ThrowOnTransientFailure(HttpResponseMessage response)
         {
             if (((int)response.StatusCode) < 200 || ((int)response.StatusCode) > 499) throw new Exception(response.StatusCode.ToString());
