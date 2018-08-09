@@ -1,12 +1,30 @@
 ﻿using System;
-
+using System.ServiceProcess;
 namespace LoyaltyProgramEventConsumer
 {
-    class Program
+    public class EventSubscriber
     {
-        static void Main(string[] args)
+
+    }
+
+    public class Program : ServiceBase
+    {
+        private EventSubscriber subscriber;
+
+        public static void Main(string[] args) => new Program().Main();
+
+        public void Main()
         {
-            Console.WriteLine("Hello World!");
+            // more to come
+            Run(this);
+        }
+        protected override void OnStart(string[] args)
+        {
+            // more to come
+        }
+        protected override void OnStop()
+        {
+            // more to come
         }
     }
 }
