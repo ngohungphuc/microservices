@@ -8,6 +8,7 @@
   <ItemGroup>
     <PackageReference Include="Dapper" Version="1.50.5" />
     <PackageReference Include="Nancy" Version="2.0.0-clinteastwood" />
+    <PackageReference Include="Polly" Version="6.1.0" />
   </ItemGroup>
 
 </Project>

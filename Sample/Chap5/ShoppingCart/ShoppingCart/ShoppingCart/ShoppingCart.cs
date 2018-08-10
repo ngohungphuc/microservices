@@ -16,6 +16,15 @@ namespace ShoppingCart.ShoppingCart
             this.UserId = userId;
         }
 
+        public ShoppingCart(int userId, IEnumerable<ShoppingCartItem> items)
+        {
+            this.UserId = userId;
+            foreach (var item in items)
+            {
+                this.items.Add(item);
+            }
+        }
+
         public void AddItems(
             IEnumerable<ShoppingCartItem> shoppingCartItems,
             IEventStore eventStore)
