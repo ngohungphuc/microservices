@@ -2,24 +2,26 @@
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
+using EventStore.ClientAPI;
 using Newtonsoft.Json;
 
 namespace ShoppingCart.EventFeed
 {
     public class EventStore : IEventStore
     {
-        private string connectionString =
-            @"Data Source=.\SQLEXPRESS;Initial Catalog=ShoppingCart;IntegratedSecurity=True";
-
         private const string writeEventSql =
             @"insert into EventStore(Name, OccurredAt, Content) values
               (@Name, @OccurredAt, @Content)";
 
         private const string readEventsSql =
             @"select * from EventStore where ID >= @Start and ID <= @End";
+
+        private const string connectionString = "discover://http://127.0.0.1:2113/";
+        private IEventStoreConnection connection = EventStoreConnection.Create(connectionString);
 
         private static long currentSequenceNumber = 0;
         private static readonly IList<Event> database = new List<Event>();
@@ -45,18 +47,37 @@ namespace ShoppingCart.EventFeed
             }
         }
 
-        public Task Raise(string eventName, object content)
+        public async Task Raise(string eventName, object content)
         {
+            await connection.ConnectAsync().ConfigureAwait(false);
             var jsonContent = JsonConvert.SerializeObject(content);
-            using (var conn = new SqlConnection(connectionString))
-            {
-                return conn.ExecuteAsync(writeEventSql, new
+            var metaDataJson =
+                JsonConvert.SerializeObject(new EventMetadata
                 {
-                    Name = eventName,
                     OccurredAt = DateTimeOffset.Now,
-                    Content = jsonContent
+                    EventName = eventName
                 });
-            }
+
+            var eventData = new EventData(
+                Guid.NewGuid(),
+                "ShoppingCartEvent",
+                isJson: true,
+                data: Encoding.UTF8.GetBytes(jsonContent),
+                metadata: Encoding.UTF8.GetBytes(metaDataJson)
+            );
+
+            //Writes the event to EventStore
+            await
+                connection.AppendToStreamAsync(
+                    "ShoppingCart",
+                    ExpectedVersion.Any,
+                    eventData);
+        }
+
+        private class EventMetadata
+        {
+            public DateTimeOffset OccurredAt { get; set; }
+            public string EventName { get; set; }
         }
     }
 }
