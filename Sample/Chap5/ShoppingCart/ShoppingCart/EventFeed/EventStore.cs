@@ -30,21 +30,18 @@ namespace ShoppingCart.EventFeed
             long firstEventSequenceNumber,
             long lastEventSequenceNumber)
         {
-            using (var conn = new SqlConnection(connectionString))
+            await connection.ConnectAsync().ConfigureAwait(false);
+            var result = await connection.ReadStreamEventsForwardAsync("ShoppingCart",
+                    start: (int)firstEventSequenceNumber,
+                    count: (int)(lastEventSequenceNumber - firstEventSequenceNumber), resolveLinkTos: false)
+                .ConfigureAwait(false);
+
+            return result.Events.Select(ev => new
             {
-                return (await conn.QueryAsync<dynamic>(
-                        readEventsSql,
-                        new
-                        {
-                            Start = firstEventSequenceNumber,
-                            End = lastEventSequenceNumber
-                        }).ConfigureAwait(false))
-                    .Select(row =>
-                    {
-                        var content = JsonConvert.DeserializeObject(row.Content);
-                        return new Event(row.Id, row.OccurredAt, row.Name, content);
-                    });
-            }
+                Content = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(ev.Event.Data)),
+                Metadata = JsonConvert.DeserializeObject<EventMetadata>(Encoding.UTF8.GetString(ev.Event.Data))
+            }).Select((ev, i) =>
+                new Event(i + firstEventSequenceNumber, ev.Metadata.OccurredAt, ev.Metadata.EventName, ev.Content));
         }
 
         public async Task Raise(string eventName, object content)
