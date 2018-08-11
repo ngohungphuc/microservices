@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Polly;
@@ -16,20 +17,47 @@ namespace ShoppingCart.Services
 
         private static string productCatalogBaseUrl = @"http://private-05cc8-chapter2productcatalogmicroservice.apiary-mock.com";
         private static string getProductPathTemplate = "/products?productIds=[{0}]";
-
+        private readonly ICache cache;
+        public ProductCatalogueClient(ICache cache)
+        {
+            this.cache = cache;
+        }
 
         public Task<IEnumerable<ShoppingCartItem>>
             GetShoppingCartItems(int[] productCatalogueIds) =>
             exponentialRetryPolicy
                 .ExecuteAsync(async () => await GetItemsFromCatalogueService(productCatalogueIds).ConfigureAwait(false));
 
-        private static async Task<HttpResponseMessage> RequestProductFromProductCatalogue(int[] productCatalogueIds)
+        private async Task<HttpResponseMessage> RequestProductFromProductCatalogue(int[] productCatalogueIds)
         {
             var productsResource = string.Format(getProductPathTemplate, string.Join(",", productCatalogueIds));
-            using (var httpClient = new HttpClient())
+            //check cache exist  if not make request
+            var response = cache.Get(productsResource) as HttpResponseMessage;
+
+            if (response == null)
             {
-                httpClient.BaseAddress = new Uri(productCatalogBaseUrl);
-                return await httpClient.GetAsync(productsResource).ConfigureAwait(false);
+                using (var httpClient = new HttpClient())
+                {
+                    httpClient.BaseAddress = new Uri(productCatalogBaseUrl);
+                    return await httpClient.GetAsync(productsResource).ConfigureAwait(false);
+                    AddToCache(productsResource, response);
+                }
+            }
+            return response;
+        }
+
+        private void AddToCache(string resource, HttpResponseMessage response)
+        {
+            var cacheHeader = response.Headers.FirstOrDefault(h => h.Key == "cache-control");
+            if (string.IsNullOrEmpty(cacheHeader.Key))
+            {
+                return;
+            }
+
+            var maxAge = CacheControlHeaderValue.Parse(cacheHeader.Value.ToString()).MaxAge;
+            if (maxAge.HasValue)
+            {
+                this.cache.Add(key: resource, value: response, ttl: maxAge.Value);
             }
         }
 
