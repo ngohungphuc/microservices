@@ -38,8 +38,14 @@ namespace LoyaltyProgramEventConsumer
         {
             using (var httpClient = new HttpClient())
             {
-                httpClient.BaseAddress = new Uri($"http://{this.loyaltyProgramHost}");
-                var response = await httpClient.GetAsync($"/events/?start={this.start}&end={this.start + this.chunkSize}");
+                httpClient.BaseAddress =
+                    new Uri($"http://{this.loyaltyProgramHost}");
+                var resource =
+                    $"/events/?start={this.start}&end={this.start + this.chunkSize}";
+                var response = await
+                    httpClient
+                        .GetAsync(resource)
+                        .ConfigureAwait(false);
                 PrettyPrintResponse(response);
                 return response;
             }
