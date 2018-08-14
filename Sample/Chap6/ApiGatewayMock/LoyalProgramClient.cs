@@ -14,22 +14,26 @@ namespace ApiGatewayMock
         private static Policy exponentialRetryPolicy = Policy.Handle<Exception>().WaitAndRetryAsync(3, attempt => TimeSpan.FromMilliseconds(100 * Math.Pow(2, attempt)));
         private static Policy circuitBreaker = Policy.Handle<Exception>().CircuitBreaker(5, TimeSpan.FromMinutes(3));
 
-        public async Task<LoyaltyProgramUser> QueryUser(int userId)
+        public async Task<HttpResponseMessage> RegisterUser(LoyaltyProgramUser newUser)
+        {
+            return await exponentialRetryPolicy.ExecuteAsync(() => DoRegisterUser(newUser));
+        }
+
+        public async Task<HttpResponseMessage> QueryUser(int userId)
+        {
+            return await circuitBreaker.ExecuteAsync(() => DoUserQuery(userId));
+        }
+
+        private async Task<HttpResponseMessage> DoUserQuery(int userId)
         {
             var userResource = $"/users/{userId}";
             using (var httpClient = new HttpClient())
             {
                 httpClient.BaseAddress = new Uri($"http://{this.hostName}");
                 var response = await httpClient.GetAsync(userResource);
-
                 ThrowOnTransientFailure(response);
-                return JsonConvert.DeserializeObject<LoyaltyProgramUser>(await response.Content.ReadAsStringAsync());
+                return response;
             }
-        }
-
-        public async Task<HttpResponseMessage> RegisterUser(LoyaltyProgramUser newUser)
-        {
-            return await exponentialRetryPolicy.ExecuteAsync(() => DoRegisterUser(newUser));
         }
 
         private async Task<HttpResponseMessage> DoRegisterUser(LoyaltyProgramUser newUser)
