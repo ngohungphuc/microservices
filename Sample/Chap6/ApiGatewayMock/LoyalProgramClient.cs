@@ -4,12 +4,14 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Polly;
 
 namespace ApiGatewayMock
 {
     public class LoyalProgramClient
     {
         private string hostName;
+        private static Policy exponentialRetryPolicy = Policy.Handle<Exception>().WaitAndRetryAsync(3, attempt => TimeSpan.FromMilliseconds(100 * Math.Pow(2, attempt)));
 
         public async Task<LoyaltyProgramUser> QueryUser(int userId)
         {
