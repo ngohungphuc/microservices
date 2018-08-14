@@ -12,6 +12,7 @@ namespace ApiGatewayMock
     {
         private string hostName;
         private static Policy exponentialRetryPolicy = Policy.Handle<Exception>().WaitAndRetryAsync(3, attempt => TimeSpan.FromMilliseconds(100 * Math.Pow(2, attempt)));
+        private static Policy circuitBreaker = Policy.Handle<Exception>().CircuitBreaker(5, TimeSpan.FromMinutes(3));
 
         public async Task<LoyaltyProgramUser> QueryUser(int userId)
         {
